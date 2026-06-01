@@ -12,6 +12,7 @@ const router = Router();
 router.use(authenticate);
 
 router.patch('/me', validate(updateProfileSchema), ctrl.updateProfile);
+router.post('/complete-onboarding', ctrl.completeOnboarding);
 router.post('/change-password', validate(changePasswordSchema), ctrl.changePassword);
 
 export default router;

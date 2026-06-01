@@ -21,6 +21,7 @@ export interface IUser {
   isVerified: boolean;
   role: 'user' | 'admin';
   isTestAccount: boolean;
+  onboardingCompleted: boolean;
   treasury: number;
   levelProgress: ILevelProgress;
   referralCode?: string;
@@ -73,6 +74,7 @@ const userSchema = new Schema<IUser, UserModel, IUserMethods>(
 
     role: { type: String, enum: ['user', 'admin'], default: 'user' },
     isTestAccount: { type: Boolean, default: false },
+    onboardingCompleted: { type: Boolean, default: false },
 
     treasury: { type: Number, default: 0 },
     levelProgress: { type: levelProgressSchema, default: () => ({}) },

@@ -28,6 +28,7 @@ const sanitizeUser = (user: UserDoc) => ({
   authProvider: user.authProvider,
   isVerified: user.isVerified,
   role: user.role,
+  onboardingCompleted: user.onboardingCompleted,
   treasury: user.treasury,
   levelProgress: user.levelProgress,
   soundOn: user.soundOn,

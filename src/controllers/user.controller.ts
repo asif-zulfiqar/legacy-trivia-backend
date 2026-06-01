@@ -12,6 +12,16 @@ export const updateProfile = asyncHandler(async (req: Request, res: Response) =>
   return success(res, { user }, 'Profile updated.');
 });
 
+export const completeOnboarding = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    { $set: { onboardingCompleted: true } },
+    { new: true }
+  );
+  return success(res, { user }, 'Onboarding completed.');
+});
+
 export const changePassword = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw ApiError.unauthorized();
   const { currentPassword, newPassword } = req.body;
