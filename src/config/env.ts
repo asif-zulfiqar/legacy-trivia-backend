@@ -36,8 +36,18 @@ export const env = {
     secure: process.env.SMTP_SECURE === 'true',
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
-    fromName: process.env.EMAIL_FROM_NAME || 'Legacy Trivia',
-    fromAddress: process.env.EMAIL_FROM_ADDRESS || 'no-reply@legacytrivia.com',
+    fromName: process.env.EMAIL_FROM_NAME || 'Pairpel',
+    fromAddress: process.env.EMAIL_FROM_ADDRESS || 'no-reply@pairpel.com',
+  },
+
+  brand: {
+    name: process.env.BRAND_NAME || 'Pairpel',
+    supportEmail: process.env.SUPPORT_EMAIL || 'support@pairpel.com',
+    appUrl: process.env.CLIENT_URL || 'http://localhost:3000',
+    addressLine: process.env.BRAND_ADDRESS || '123 Trivia Lane, Game City, Playland',
+    legalName: process.env.BRAND_LEGAL_NAME || 'Pairpel Games Ltd.',
+    instagramUrl: process.env.BRAND_INSTAGRAM_URL || 'https://www.instagram.com/pairpeltrivia?igsh=Ync4cm55Z3NqaXh6',
+    discordUrl: process.env.BRAND_DISCORD_URL || 'https://discord.gg/VAT567AMh',
   },
 
   clientUrl: process.env.CLIENT_URL || 'http://localhost:3000',

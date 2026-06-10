@@ -8,3 +8,6 @@ coverage/
 dist/
 .idea/
 .vscode/
+
+# Generated email template previews
+email-previews/

@@ -4,7 +4,10 @@ import type { HydratedDocument } from 'mongoose';
 import { User, type IUser, type IUserMethods } from '../models/User.js';
 import { PasswordResetSession } from '../models/PasswordResetSession.js';
 import { issueOtp, verifyOtp } from '../services/otp.service.js';
-import { sendOtpEmail } from '../services/email.service.js';
+import {
+  sendWelcomeOtpEmail,
+  sendResetPasswordOtpEmail,
+} from '../services/email/index.js';
 import { verifyGoogleIdToken } from '../services/google.service.js';
 import {
   signAccessToken,
@@ -72,7 +75,7 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
   }
 
   const otp = await issueOtp({ email, purpose: 'email_verification' });
-  await sendOtpEmail({ to: email, otp, purpose: 'email_verification' });
+  await sendWelcomeOtpEmail({ to: email, firstName, otp });
 
   return created(res, { email }, 'Verification code sent to your email.');
 });
@@ -102,7 +105,11 @@ export const resendOtp = asyncHandler(async (req: Request, res: Response) => {
   }
 
   const otp = await issueOtp({ email, purpose });
-  await sendOtpEmail({ to: email, otp, purpose });
+  if (purpose === 'password_reset') {
+    await sendResetPasswordOtpEmail({ to: email, firstName: user.firstName, otp });
+  } else {
+    await sendWelcomeOtpEmail({ to: email, firstName: user.firstName, otp });
+  }
   return success(res, { email }, 'Verification code sent.');
 });
 
@@ -120,7 +127,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 
   if (!user.isVerified) {
     const otp = await issueOtp({ email, purpose: 'email_verification' });
-    await sendOtpEmail({ to: email, otp, purpose: 'email_verification' });
+    await sendWelcomeOtpEmail({ to: email, firstName: user.firstName, otp });
     return success(
       res,
       { email, requiresVerification: true },
@@ -182,7 +189,7 @@ export const forgotPassword = asyncHandler(async (req: Request, res: Response) =
   // Always return success-like response to avoid email enumeration.
   if (user && user.authProvider === 'local') {
     const otp = await issueOtp({ email, purpose: 'password_reset' });
-    await sendOtpEmail({ to: email, otp, purpose: 'password_reset' });
+    await sendResetPasswordOtpEmail({ to: email, firstName: user.firstName, otp });
   }
   return success(
     res,
