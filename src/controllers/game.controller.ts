@@ -14,6 +14,18 @@ import {
   type LevelKey,
   type LifelineType,
 } from '../config/gameRules.js';
+import {
+  sendCongratsEmail,
+  sendAchievementEmail,
+} from '../services/email/index.js';
+
+const LEVEL_DISPLAY_NAMES: Record<number, string> = {
+  1: 'The First Date',
+  2: 'The Commitment',
+};
+
+const levelDisplayName = (level: number): string =>
+  LEVEL_DISPLAY_NAMES[level] || `Level ${level}`;
 
 const ALL_KEYS: OptionKey[] = ['A', 'B', 'C', 'D'];
 
@@ -207,6 +219,16 @@ export const submitAnswer = asyncHandler(async (req: Request, res: Response) => 
   await session.save();
 
   if (session.status === 'won') {
+    // Capture prior completion state BEFORE the update so we can detect
+    // the first-time win for this level and send the celebration email
+    // exactly once per user per level.
+    const lp = req.user.levelProgress as
+      | { level1Completed?: boolean; level2Completed?: boolean }
+      | undefined;
+    const wasLevel1Done = !!lp?.level1Completed;
+    const wasLevel2Done = !!lp?.level2Completed;
+    const priorTreasury = req.user.treasury || 0;
+
     await User.updateOne(
       { _id: req.user._id },
       {
@@ -221,6 +243,35 @@ export const submitAnswer = asyncHandler(async (req: Request, res: Response) => 
         },
       }
     );
+
+    // Fire-and-forget celebration email. Wrapped so an SMTP failure
+    // never breaks the game response.
+    const firstTimeWin =
+      (session.level === 1 && !wasLevel1Done) ||
+      (session.level === 2 && !wasLevel2Done);
+
+    if (firstTimeWin && req.user.email) {
+      const newTreasury = priorTreasury + session.prizeWon;
+      const userInfo = {
+        to: req.user.email,
+        firstName: req.user.firstName || 'Player',
+      };
+      const sendPromise =
+        session.level === 1
+          ? sendCongratsEmail({
+              ...userInfo,
+              prize: session.prizeWon,
+              phaseName: levelDisplayName(1),
+            })
+          : sendAchievementEmail({
+              ...userInfo,
+              levelName: levelDisplayName(session.level),
+              treasury: newTreasury,
+            });
+      sendPromise.catch((err) =>
+        console.error('[email] level-win send failed:', err)
+      );
+    }
   }
 
   const currentDoc = await loadCurrentQuestionDoc(session);
