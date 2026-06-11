@@ -1,5 +1,5 @@
 import { env } from '../../../config/env.js';
-import { escapeHtml, renderCallout, renderGreeting, wrapInLayout } from './layout.js';
+import { assetUrl, escapeHtml, renderCallout, renderGreeting, wrapInLayout } from './layout.js';
 import type { RenderedEmail } from './welcome-otp.js';
 
 export interface AchievementArgs {
@@ -61,7 +61,7 @@ const renderTreasuryCard = (treasury: number): string => `
         </tr>
         <tr>
           <td align="center" style="padding-bottom:4px;">
-            <span style="display:inline-block;font-size:48px;line-height:1;">🎁</span>
+            <img src="${assetUrl('yourtreasury.png')}" alt="" width="64" height="64" style="display:inline-block;width:64px;height:64px;border:0;outline:none;" />
           </td>
         </tr>
         <tr>

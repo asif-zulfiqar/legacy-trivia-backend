@@ -44,6 +44,11 @@ export const env = {
     name: process.env.BRAND_NAME || 'Pairpel',
     supportEmail: process.env.SUPPORT_EMAIL || 'support@pairpel.com',
     appUrl: process.env.CLIENT_URL || 'http://localhost:3000',
+    // Where image assets are served from. Email clients require absolute URLs,
+    // so this defaults to the public frontend's `/images/` path.
+    assetsBaseUrl:
+      process.env.BRAND_ASSETS_BASE_URL ||
+      `${process.env.CLIENT_URL || 'http://localhost:3000'}/images`,
     addressLine: process.env.BRAND_ADDRESS || '123 Trivia Lane, Game City, Playland',
     legalName: process.env.BRAND_LEGAL_NAME || 'Pairpel Games Ltd.',
     instagramUrl: process.env.BRAND_INSTAGRAM_URL || 'https://www.instagram.com/pairpeltrivia?igsh=Ync4cm55Z3NqaXh6',

@@ -1,5 +1,6 @@
 import { env } from '../../../config/env.js';
 import {
+  assetUrl,
   escapeHtml,
   renderCallout,
   renderGreeting,
@@ -60,7 +61,7 @@ const renderRewardCard = (prize: number): string => `
         </tr>
         <tr>
           <td align="center" style="padding:6px 0 4px;">
-            <span style="display:inline-block;font-size:48px;line-height:1;">🎁</span>
+            <img src="${assetUrl('yourtreasury.png')}" alt="" width="64" height="64" style="display:inline-block;width:64px;height:64px;border:0;outline:none;" />
           </td>
         </tr>
         <tr>

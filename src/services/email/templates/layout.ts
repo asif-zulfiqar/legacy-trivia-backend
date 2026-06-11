@@ -23,8 +23,20 @@ const HEADER_BG =
 
 const FOOTER_BG = HEADER_BG;
 
+/** Build an absolute URL for an asset under the frontend's /images folder. */
+export const assetUrl = (filename: string): string => {
+  const base = env.brand.assetsBaseUrl.replace(/\/$/, '');
+  const file = filename.replace(/^\//, '');
+  return `${base}/${file}`;
+};
+
+/**
+ * Brand logo block. Prefers the hosted `logo.png` from the frontend's
+ * `/public/images/` folder. Falls back to styled text (PAIR + PEL) if the
+ * image fails to load — controlled by `<img alt>` + inline text fallback.
+ */
 const brandLogoHtml = `
-<span style="font-family:'Anton','Bebas Neue','Impact','Arial Black',sans-serif;font-weight:900;font-size:32px;letter-spacing:2px;color:#ffffff;line-height:1;">PAIR<span style="color:#9d6bff;">PEL</span></span>`;
+<img src="${assetUrl('logo.png')}" alt="PAIRPEL" width="148" height="36" style="display:inline-block;max-width:148px;height:auto;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;" />`;
 
 const renderHeader = (): string => `
 <tr>
@@ -39,8 +51,12 @@ const renderFooter = (): string => `
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
         <td align="center" style="padding-bottom:14px;">
-          <a href="${env.brand.instagramUrl}" style="display:inline-block;margin:0 6px;text-decoration:none;font-size:24px;line-height:1;">📷</a>
-          <a href="${env.brand.discordUrl}" style="display:inline-block;margin:0 6px;text-decoration:none;font-size:24px;line-height:1;">💬</a>
+          <a href="${env.brand.instagramUrl}" style="display:inline-block;margin:0 6px;text-decoration:none;line-height:0;">
+            <img src="${assetUrl('instagram-icon.jpeg')}" alt="Instagram" width="28" height="28" style="display:inline-block;width:28px;height:28px;border:0;outline:none;border-radius:6px;" />
+          </a>
+          <a href="${env.brand.discordUrl}" style="display:inline-block;margin:0 6px;text-decoration:none;line-height:0;">
+            <img src="${assetUrl('discord-icon.png')}" alt="Discord" width="28" height="28" style="display:inline-block;width:28px;height:28px;border:0;outline:none;" />
+          </a>
         </td>
       </tr>
       <tr>
