@@ -69,10 +69,9 @@ export const resetPasswordSchema = Joi.object({
   body: Joi.object({
     resetToken: Joi.string().required(),
     newPassword: passwordRule.required(),
-    confirmPassword: Joi.any()
-      .equal(Joi.ref('newPassword'))
-      .required()
-      .messages({ 'any.only': 'Passwords do not match.' }),
+    // confirmPassword is a UI-only concern — the client is responsible for
+    // checking the two fields match before submitting. Accepted but ignored.
+    confirmPassword: Joi.string().optional(),
   }),
 });
 

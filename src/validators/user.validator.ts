@@ -16,13 +16,15 @@ export const changePasswordSchema = Joi.object({
     newPassword: Joi.string()
       .min(8)
       .max(128)
-      .pattern(/[A-Z]/)
-      .pattern(/[a-z]/)
-      .pattern(/\d/)
-      .required(),
-    confirmPassword: Joi.any()
-      .equal(Joi.ref('newPassword'))
+      .pattern(/[A-Z]/, 'uppercase')
+      .pattern(/[a-z]/, 'lowercase')
+      .pattern(/\d/, 'digit')
       .required()
-      .messages({ 'any.only': 'Passwords do not match.' }),
+      .messages({
+        'string.pattern.name': 'Password must include {#name} characters.',
+        'string.min': 'Password must be at least 8 characters.',
+      }),
+    // UI-only field — accepted but ignored. Client enforces match.
+    confirmPassword: Joi.string().optional(),
   }),
 });

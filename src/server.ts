@@ -6,7 +6,9 @@ const start = async (): Promise<void> => {
   try {
     await connectDB();
     const server = app.listen(env.port, () => {
-      console.log(`🚀 Legacy Trivia API running on http://localhost:${env.port}`);
+      console.log(`🚀 ${env.brand.name} API running on http://localhost:${env.port}`);
+      console.log(`   client URL     : ${env.clientUrl}`);
+      console.log(`   email asset URL: ${env.brand.assetsBaseUrl}`);
     });
 
     const shutdown = (signal: string): void => {

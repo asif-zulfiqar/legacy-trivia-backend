@@ -10,6 +10,17 @@ const required = (key: string): string => {
   return value;
 };
 
+/**
+ * CLIENT_URL is commonly a comma-separated CORS allowlist
+ * (e.g. `https://pairpel.com,https://www.pairpel.com`). Anywhere we need
+ * ONE concrete URL (email links, asset hosts) we take the first entry
+ * and drop the trailing slash so URL concatenation is predictable.
+ */
+const primaryUrl = (raw: string | undefined): string => {
+  const first = (raw || 'http://localhost:3000').split(',')[0]?.trim() ?? '';
+  return first.replace(/\/$/, '');
+};
+
 export const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: Number(process.env.PORT) || 5001,
@@ -43,15 +54,18 @@ export const env = {
   brand: {
     name: process.env.BRAND_NAME || 'Pairpel',
     supportEmail: process.env.SUPPORT_EMAIL || 'support@pairpel.com',
-    appUrl: process.env.CLIENT_URL || 'http://localhost:3000',
-    // Where image assets are served from. Email clients require absolute URLs,
-    // so this defaults to the public frontend's `/images/` path.
-    assetsBaseUrl:
-      process.env.BRAND_ASSETS_BASE_URL ||
-      `${process.env.CLIENT_URL || 'http://localhost:3000'}/images`,
+    appUrl: primaryUrl(process.env.CLIENT_URL),
+    // Where image assets are served from. Email clients require absolute,
+    // publicly-reachable URLs. We derive this from CLIENT_URL but take only
+    // the first origin if it's a comma-separated CORS list.
+    assetsBaseUrl: primaryUrl(
+      process.env.BRAND_ASSETS_BASE_URL || `${primaryUrl(process.env.CLIENT_URL)}/images`,
+    ),
     addressLine: process.env.BRAND_ADDRESS || '123 Trivia Lane, Game City, Playland',
     legalName: process.env.BRAND_LEGAL_NAME || 'Pairpel Games Ltd.',
-    instagramUrl: process.env.BRAND_INSTAGRAM_URL || 'https://www.instagram.com/pairpeltrivia?igsh=Ync4cm55Z3NqaXh6',
+    instagramUrl:
+      process.env.BRAND_INSTAGRAM_URL ||
+      'https://www.instagram.com/pairpeltrivia?igsh=Ync4cm55Z3NqaXh6',
     discordUrl: process.env.BRAND_DISCORD_URL || 'https://discord.gg/VAT567AMh',
   },
 
