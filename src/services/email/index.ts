@@ -4,6 +4,7 @@ import { welcomeOtpTemplate } from './templates/welcome-otp.js';
 import { resetPasswordOtpTemplate } from './templates/reset-password-otp.js';
 import { congratsTemplate } from './templates/congrats.js';
 import { achievementTemplate } from './templates/achievement.js';
+import { accessCodeTemplate } from './templates/access-code.js';
 
 export { sendEmail } from './sender.js';
 
@@ -83,6 +84,27 @@ export const sendAchievementEmail = async ({
     firstName,
     levelName,
     treasury,
+  });
+  return sendEmail({ to, subject, html, text });
+};
+
+interface SendAccessCodeArgs {
+  to: string;
+  firstName: string;
+  code: string;
+  inviteUrl: string;
+}
+
+export const sendAccessCodeEmail = async ({
+  to,
+  firstName,
+  code,
+  inviteUrl,
+}: SendAccessCodeArgs) => {
+  const { subject, html, text } = accessCodeTemplate({
+    firstName,
+    code,
+    inviteUrl,
   });
   return sendEmail({ to, subject, html, text });
 };

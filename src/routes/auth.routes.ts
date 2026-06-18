@@ -13,6 +13,8 @@ import {
   verifyResetOtpSchema,
   resetPasswordSchema,
   refreshSchema,
+  verifyLoginOtpSchema,
+  resendLoginOtpSchema,
 } from '../validators/auth.validator.js';
 
 const router = Router();
@@ -22,6 +24,8 @@ router.post('/verify-email', authLimiter, validate(verifyOtpSchema), ctrl.verify
 router.post('/resend-otp', otpLimiter, validate(resendOtpSchema), ctrl.resendOtp);
 
 router.post('/login', authLimiter, validate(loginSchema), ctrl.login);
+router.post('/verify-login', authLimiter, validate(verifyLoginOtpSchema), ctrl.verifyLoginOtp);
+router.post('/resend-login-otp', otpLimiter, validate(resendLoginOtpSchema), ctrl.resendLoginOtp);
 router.post('/google', authLimiter, validate(googleAuthSchema), ctrl.googleAuth);
 
 router.post('/forgot-password', otpLimiter, validate(forgotPasswordSchema), ctrl.forgotPassword);

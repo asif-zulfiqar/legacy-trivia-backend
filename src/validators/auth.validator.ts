@@ -20,6 +20,10 @@ export const signupSchema = Joi.object({
     lastName: Joi.string().trim().min(1).max(50).required(),
     email: emailRule,
     password: passwordRule.required(),
+    accessCode: Joi.string().trim().min(4).max(20).required().messages({
+      'any.required': 'Access code required.',
+      'string.empty': 'Access code required.',
+    }),
     referralCode: Joi.string().trim().optional().allow(''),
   }),
 });
@@ -38,6 +42,21 @@ export const resendOtpSchema = Joi.object({
   }),
 });
 
+export const verifyLoginOtpSchema = Joi.object({
+  body: Joi.object({
+    email: emailRule,
+    otp: Joi.string().length(6).pattern(/^\d{6}$/).required(),
+    loginToken: Joi.string().required(),
+  }),
+});
+
+export const resendLoginOtpSchema = Joi.object({
+  body: Joi.object({
+    email: emailRule,
+    loginToken: Joi.string().required(),
+  }),
+});
+
 export const loginSchema = Joi.object({
   body: Joi.object({
     email: emailRule,
@@ -48,6 +67,7 @@ export const loginSchema = Joi.object({
 export const googleAuthSchema = Joi.object({
   body: Joi.object({
     idToken: Joi.string().required(),
+    accessCode: Joi.string().trim().min(4).max(20).optional().allow(''),
     referralCode: Joi.string().trim().optional().allow(''),
   }),
 });

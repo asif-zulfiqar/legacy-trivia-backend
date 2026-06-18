@@ -3,7 +3,7 @@ import mongoose, { Schema } from 'mongoose';
 export interface IOtp {
   email: string;
   otpHash: string;
-  purpose: 'email_verification' | 'password_reset';
+  purpose: 'email_verification' | 'password_reset' | 'login_verification';
   attempts: number;
   expiresAt: Date;
   consumed: boolean;
@@ -17,7 +17,7 @@ const otpSchema = new Schema<IOtp>(
     otpHash: { type: String, required: true },
     purpose: {
       type: String,
-      enum: ['email_verification', 'password_reset'],
+      enum: ['email_verification', 'password_reset', 'login_verification'],
       required: true,
       index: true,
     },

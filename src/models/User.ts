@@ -21,10 +21,13 @@ export interface IUser {
   isVerified: boolean;
   role: 'user' | 'admin';
   isTestAccount: boolean;
+  approved: boolean;
   onboardingCompleted: boolean;
   treasury: number;
   levelProgress: ILevelProgress;
   referralCode?: string;
+  signupAccessCode?: string;
+  referredBy?: string;
   btcAddress: string;
   soundOn: boolean;
   lastLoginAt?: Date;
@@ -74,12 +77,15 @@ const userSchema = new Schema<IUser, UserModel, IUserMethods>(
 
     role: { type: String, enum: ['user', 'admin'], default: 'user' },
     isTestAccount: { type: Boolean, default: false },
+    approved: { type: Boolean, default: false, index: true },
     onboardingCompleted: { type: Boolean, default: false },
 
     treasury: { type: Number, default: 0 },
     levelProgress: { type: levelProgressSchema, default: () => ({}) },
 
     referralCode: { type: String, index: true, sparse: true },
+    signupAccessCode: { type: String, uppercase: true, trim: true, index: true, sparse: true },
+    referredBy: { type: String, trim: true },
     btcAddress: { type: String, default: '' },
     soundOn: { type: Boolean, default: true },
 

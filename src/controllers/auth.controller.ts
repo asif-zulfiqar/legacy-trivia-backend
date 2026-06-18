@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import type { Request, Response } from 'express';
 import type { HydratedDocument } from 'mongoose';
 import { User, type IUser, type IUserMethods } from '../models/User.js';
+import { AccessCode, type IAccessCode } from '../models/AccessCode.js';
 import { PasswordResetSession } from '../models/PasswordResetSession.js';
 import { issueOtp, verifyOtp } from '../services/otp.service.js';
 import {
@@ -9,6 +10,12 @@ import {
   sendResetPasswordOtpEmail,
 } from '../services/email/index.js';
 import { verifyGoogleIdToken } from '../services/google.service.js';
+import { normalizeAccessCode } from '../services/accessCode.service.js';
+import {
+  assertLoginChallenge,
+  consumeLoginChallenge,
+  createLoginChallenge,
+} from '../services/loginChallenge.service.js';
 import {
   signAccessToken,
   issueRefreshToken,
@@ -31,12 +38,70 @@ const sanitizeUser = (user: UserDoc) => ({
   authProvider: user.authProvider,
   isVerified: user.isVerified,
   role: user.role,
+  approved: user.approved,
   onboardingCompleted: user.onboardingCompleted,
   treasury: user.treasury,
   levelProgress: user.levelProgress,
   soundOn: user.soundOn,
   btcAddress: user.btcAddress,
 });
+
+const sendLoginVerification = async (user: UserDoc): Promise<{ loginToken: string }> => {
+  const loginToken = await createLoginChallenge(user.email);
+  const otp = await issueOtp({ email: user.email, purpose: 'login_verification' });
+  await sendWelcomeOtpEmail({
+    to: user.email,
+    firstName: user.firstName || 'Player',
+    otp,
+  });
+  return { loginToken };
+};
+
+const validateSignupAccessCode = async ({
+  email,
+  accessCode,
+  existingUser,
+}: {
+  email: string;
+  accessCode?: string;
+  existingUser?: UserDoc | null;
+}): Promise<HydratedDocument<IAccessCode>> => {
+  if (!accessCode || !accessCode.trim()) {
+    throw ApiError.badRequest('Access code required.');
+  }
+
+  const code = normalizeAccessCode(accessCode);
+  const access = await AccessCode.findOne({ code, email });
+  if (!access) {
+    throw ApiError.badRequest('Invalid access code for this email.');
+  }
+
+  const existingUserId = existingUser?._id?.toString();
+  const usedByThisUser =
+    existingUserId && access.usedBy?.toString() === existingUserId;
+
+  if (access.used && !usedByThisUser) {
+    throw ApiError.badRequest('Access code has already been used.');
+  }
+
+  return access;
+};
+
+const markAccessCodeUsed = async ({
+  accessCode,
+  user,
+}: {
+  accessCode: HydratedDocument<IAccessCode>;
+  user: UserDoc;
+}): Promise<void> => {
+  if (accessCode.used && accessCode.usedBy?.toString() === user._id.toString()) {
+    return;
+  }
+  accessCode.used = true;
+  accessCode.usedBy = user._id;
+  accessCode.usedAt = new Date();
+  await accessCode.save();
+};
 
 const issueAuthTokens = async (user: UserDoc, req: Request) => {
   const accessToken = signAccessToken(user);
@@ -53,25 +118,37 @@ const issueAuthTokens = async (user: UserDoc, req: Request) => {
 };
 
 export const signup = asyncHandler(async (req: Request, res: Response) => {
-  const { firstName, lastName, email, password, referralCode } = req.body;
+  const { firstName, lastName, email, password, referralCode, accessCode } = req.body;
 
   const existing = await User.findOne({ email });
   if (existing) {
     if (existing.isVerified) throw ApiError.conflict('Email already registered.');
+    const access = await validateSignupAccessCode({
+      email,
+      accessCode,
+      existingUser: existing,
+    });
     existing.firstName = firstName;
     existing.lastName = lastName;
     existing.password = password;
     if (referralCode) existing.referralCode = referralCode;
+    existing.signupAccessCode = normalizeAccessCode(accessCode);
+    existing.approved = true;
     await existing.save();
+    await markAccessCodeUsed({ accessCode: access, user: existing });
   } else {
-    await User.create({
+    const access = await validateSignupAccessCode({ email, accessCode });
+    const user = await User.create({
       firstName,
       lastName,
       email,
       password,
       referralCode,
       authProvider: 'local',
+      signupAccessCode: normalizeAccessCode(accessCode),
+      approved: true,
     });
+    await markAccessCodeUsed({ accessCode: access, user });
   }
 
   const otp = await issueOtp({ email, purpose: 'email_verification' });
@@ -131,24 +208,28 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     return success(
       res,
       { email, requiresVerification: true },
-      'Please verify your email. A new code has been sent.',
-      403
+      'Please verify your email. A new code has been sent.'
     );
   }
 
-  user.lastLoginAt = new Date();
-  await user.save();
-
-  const tokens = await issueAuthTokens(user, req);
-  return success(res, { user: sanitizeUser(user), ...tokens }, 'Logged in.');
+  const { loginToken } = await sendLoginVerification(user);
+  return success(
+    res,
+    { email: user.email, loginToken, requiresLoginVerification: true },
+    'Verification code sent to your email.'
+  );
 });
 
 export const googleAuth = asyncHandler(async (req: Request, res: Response) => {
-  const { idToken, referralCode } = req.body;
+  const { idToken, referralCode, accessCode } = req.body;
   const profile = await verifyGoogleIdToken(idToken);
 
   let user = await User.findOne({ email: profile.email });
   if (!user) {
+    const access = await validateSignupAccessCode({
+      email: profile.email,
+      accessCode,
+    });
     user = await User.create({
       firstName: profile.firstName || 'User',
       lastName: profile.lastName || '',
@@ -156,17 +237,16 @@ export const googleAuth = asyncHandler(async (req: Request, res: Response) => {
       googleId: profile.googleId,
       authProvider: 'google',
       profilePicture: profile.picture,
-      isVerified: true,
+      isVerified: false,
       referralCode,
+      signupAccessCode: normalizeAccessCode(accessCode),
+      approved: true,
     });
+    await markAccessCodeUsed({ accessCode: access, user });
   } else {
     let dirty = false;
     if (!user.googleId) {
       user.googleId = profile.googleId;
-      dirty = true;
-    }
-    if (!user.isVerified) {
-      user.isVerified = true;
       dirty = true;
     }
     if (!user.profilePicture && profile.picture) {
@@ -176,11 +256,59 @@ export const googleAuth = asyncHandler(async (req: Request, res: Response) => {
     if (dirty) await user.save();
   }
 
+  if (!user.isVerified) {
+    const otp = await issueOtp({ email: user.email, purpose: 'email_verification' });
+    await sendWelcomeOtpEmail({ to: user.email, firstName: user.firstName, otp });
+    return success(
+      res,
+      { email: user.email, requiresVerification: true },
+      'Please verify your email. A new code has been sent.'
+    );
+  }
+
+  const { loginToken } = await sendLoginVerification(user);
+  return success(
+    res,
+    { email: user.email, loginToken, requiresLoginVerification: true },
+    'Verification code sent to your email.'
+  );
+});
+
+export const verifyLoginOtp = asyncHandler(async (req: Request, res: Response) => {
+  const { email, otp, loginToken } = req.body as {
+    email: string;
+    otp: string;
+    loginToken: string;
+  };
+
+  const user = await User.findOne({ email });
+  if (!user || !user.isVerified) throw ApiError.badRequest('Invalid request.');
+
+  await assertLoginChallenge({ email, loginToken });
+  await verifyOtp({ email, otp, purpose: 'login_verification' });
+  await consumeLoginChallenge({ email, loginToken });
+
   user.lastLoginAt = new Date();
   await user.save();
 
   const tokens = await issueAuthTokens(user, req);
-  return success(res, { user: sanitizeUser(user), ...tokens }, 'Logged in with Google.');
+  return success(res, { user: sanitizeUser(user), ...tokens }, 'Logged in.');
+});
+
+export const resendLoginOtp = asyncHandler(async (req: Request, res: Response) => {
+  const { email, loginToken } = req.body as { email: string; loginToken: string };
+  const user = await User.findOne({ email });
+  if (!user || !user.isVerified) throw ApiError.badRequest('Invalid request.');
+
+  await assertLoginChallenge({ email, loginToken });
+  const otp = await issueOtp({ email, purpose: 'login_verification' });
+  await sendWelcomeOtpEmail({
+    to: email,
+    firstName: user.firstName || 'Player',
+    otp,
+  });
+
+  return success(res, { email }, 'Verification code sent.');
 });
 
 export const forgotPassword = asyncHandler(async (req: Request, res: Response) => {

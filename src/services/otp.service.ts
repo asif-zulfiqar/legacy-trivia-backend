@@ -6,7 +6,7 @@ import { ApiError } from '../utils/ApiError.js';
 const MAX_ATTEMPTS = 5;
 const RESEND_COOLDOWN_MS = 60 * 1000;
 
-type OtpPurpose = 'email_verification' | 'password_reset';
+type OtpPurpose = 'email_verification' | 'password_reset' | 'login_verification';
 
 export const issueOtp = async ({
   email,
