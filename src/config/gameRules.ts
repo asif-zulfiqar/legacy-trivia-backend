@@ -6,7 +6,16 @@ export interface LevelConfig {
   timerSeconds: number;
   maxPrize: number;
   requiresLevel: LevelKey | null;
-  lifelinesFree: boolean;
+  lifelineCost: LifelineCost;
+  timeFreezeSeconds: number;
+}
+
+export type LifelineCostSource = 'potential_winnings' | 'treasury' | 'free';
+
+export interface LifelineCost {
+  amount: number;
+  currency: 'USD' | 'GEMS';
+  source: LifelineCostSource;
 }
 
 export const LEVEL_CONFIG: Record<LevelKey, LevelConfig> = {
@@ -16,7 +25,12 @@ export const LEVEL_CONFIG: Record<LevelKey, LevelConfig> = {
     timerSeconds: 35,
     maxPrize: 15,
     requiresLevel: null,
-    lifelinesFree: true,
+    lifelineCost: {
+      amount: 1,
+      currency: 'USD',
+      source: 'potential_winnings',
+    },
+    timeFreezeSeconds: 15,
   },
   2: {
     level: 2,
@@ -24,19 +38,29 @@ export const LEVEL_CONFIG: Record<LevelKey, LevelConfig> = {
     timerSeconds: 15,
     maxPrize: 200,
     requiresLevel: 1,
-    lifelinesFree: false,
+    lifelineCost: {
+      amount: 5,
+      currency: 'GEMS',
+      source: 'treasury',
+    },
+    timeFreezeSeconds: 15,
   },
 };
 
-export const LIFELINE_TYPES = [
+export const REGULAR_LIFELINE_TYPES = [
   'ask_a_friend',
   'ask_the_audience',
   'the_reveal',
   'time_freeze',
+] as const;
+
+export const LIFELINE_TYPES = [
+  ...REGULAR_LIFELINE_TYPES,
   'empress_guard',
 ] as const;
 
 export type LifelineType = (typeof LIFELINE_TYPES)[number];
+export type RegularLifelineType = (typeof REGULAR_LIFELINE_TYPES)[number];
 
 export const buildPrizeLadder = (level: LevelKey): number[] => {
   const cfg = LEVEL_CONFIG[level];

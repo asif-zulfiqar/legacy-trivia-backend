@@ -15,9 +15,11 @@ router.use(authenticate);
 
 router.get('/progress', ctrl.getProgress);
 router.get('/history', ctrl.getHistory);
+router.get('/rules', ctrl.getRules);
 
 router.post('/start', validate(startGameSchema), ctrl.startGame);
 router.get('/session/:sessionId', validate(sessionParamSchema), ctrl.getSession);
+router.get('/session/:sessionId/lifelines', validate(sessionParamSchema), ctrl.getLifelines);
 router.post('/answer', validate(answerSchema), ctrl.submitAnswer);
 router.post('/lifeline', validate(lifelineSchema), ctrl.useLifeline);
 router.post('/session/:sessionId/cashout', validate(sessionParamSchema), ctrl.cashOut);

@@ -56,10 +56,10 @@ export const env = {
     supportEmail: process.env.SUPPORT_EMAIL || 'support@pairpel.com',
     appUrl: primaryUrl(process.env.CLIENT_URL),
     // Where image assets are served from. Email clients require absolute,
-    // publicly-reachable URLs. We derive this from CLIENT_URL but take only
-    // the first origin if it's a comma-separated CORS list.
+    // publicly-reachable HTTPS URLs. Default to the live Pairpel asset host
+    // so local/dev CLIENT_URL values never produce broken email images.
     assetsBaseUrl: primaryUrl(
-      process.env.BRAND_ASSETS_BASE_URL || `${primaryUrl(process.env.CLIENT_URL)}/images`,
+      process.env.BRAND_ASSETS_BASE_URL || 'https://pairpel.com/images',
     ),
     addressLine: process.env.BRAND_ADDRESS || '123 Trivia Lane, Game City, Playland',
     legalName: process.env.BRAND_LEGAL_NAME || 'Pairpel Games Ltd.',

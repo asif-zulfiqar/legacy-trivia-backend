@@ -1,6 +1,6 @@
 import mongoose, { Schema, Types } from 'mongoose';
 import type { OptionKey } from './Question.js';
-import type { LifelineType } from '../config/gameRules.js';
+import type { LifelineCostSource, LifelineType } from '../config/gameRules.js';
 
 export interface ISessionQuestion {
   question: Types.ObjectId;
@@ -9,12 +9,17 @@ export interface ISessionQuestion {
   isCorrect?: boolean | null;
   answeredAt?: Date;
   timeTakenMs?: number;
+  timeBonusSeconds?: number;
 }
 
 export interface ILifelineUsage {
   type: LifelineType;
   questionIndex: number;
   usedAt: Date;
+  costAmount?: number;
+  costCurrency?: 'USD' | 'GEMS';
+  costSource?: LifelineCostSource;
+  payload?: Record<string, unknown>;
 }
 
 export type GameSessionStatus =
@@ -30,6 +35,7 @@ export interface IGameSession {
   questions: ISessionQuestion[];
   currentIndex: number;
   lifelinesUsed: ILifelineUsage[];
+  potentialPrizePenalty: number;
   empressGuardConsumed: boolean;
   status: GameSessionStatus;
   timerSeconds: number;
@@ -53,6 +59,7 @@ const sessionQuestionSchema = new Schema<ISessionQuestion>(
     isCorrect: { type: Boolean, default: null },
     answeredAt: { type: Date },
     timeTakenMs: { type: Number },
+    timeBonusSeconds: { type: Number, default: 0 },
   },
   { _id: false }
 );
@@ -66,6 +73,14 @@ const lifelineUsageSchema = new Schema<ILifelineUsage>(
     },
     questionIndex: { type: Number, required: true },
     usedAt: { type: Date, default: Date.now },
+    costAmount: { type: Number, default: 0 },
+    costCurrency: { type: String, enum: ['USD', 'GEMS'] },
+    costSource: {
+      type: String,
+      enum: ['potential_winnings', 'treasury', 'free'],
+      default: 'free',
+    },
+    payload: { type: Schema.Types.Mixed },
   },
   { _id: false }
 );
@@ -79,6 +94,7 @@ const gameSessionSchema = new Schema<IGameSession>(
     currentIndex: { type: Number, default: 0 },
 
     lifelinesUsed: { type: [lifelineUsageSchema], default: [] },
+    potentialPrizePenalty: { type: Number, default: 0 },
     empressGuardConsumed: { type: Boolean, default: false },
 
     status: {
